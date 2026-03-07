@@ -1,0 +1,498 @@
+/* style.css */
+/* Five Tattva Cyberhub Security LLP Branding */
+
+:root {
+    --primary-color: #163685;
+    /* Navy Blue */
+    --secondary-color: #116DFF;
+    /* Bright Blue */
+    --accent-color: #F37022;
+    /* Orange */
+    --text-primary: #333333;
+    /* Dark Grey for better readability on white */
+    --text-secondary: #666666;
+    --bg-color: #f4f7f6;
+    /* Light Grey Background */
+    --card-bg: #ffffff;
+    --white: #ffffff;
+    --danger: #EA4141;
+    /* Red */
+    --warning: #F37022;
+    /* Orange as warning too */
+    --success: #00e676;
+    --header-bg: #ffffff;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    background-color: var(--header-bg);
+    padding: 15px 0;
+    border-bottom: 4px solid var(--primary-color);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    margin-bottom: 30px;
+}
+
+.brand-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.brand-logo img {
+    height: 60px;
+    width: auto;
+}
+
+.brand-text h1 {
+    color: var(--primary-color);
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.brand-text span {
+    color: var(--accent-color);
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: block;
+}
+
+.controls button {
+    background-color: var(--primary-color);
+    border: none;
+    color: var(--white);
+    padding: 12px 24px;
+    cursor: pointer;
+    font-weight: 600;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(22, 54, 133, 0.2);
+}
+
+.controls button:hover {
+    background-color: var(--secondary-color);
+    transform: translateY(-2px);
+}
+
+.controls button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.advisory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 25px;
+}
+
+.advisory-card {
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-top: 5px solid var(--accent-color);
+    display: flex;
+    flex-direction: column;
+}
+
+.advisory-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.advisory-id {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    background: #f0f0f0;
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    align-self: flex-start;
+}
+
+.advisory-title {
+    color: var(--primary-color);
+    font-size: 1.25rem;
+    margin: 0 0 15px 0;
+    font-weight: 700;
+    flex-grow: 1;
+}
+
+.advisory-meta {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+}
+
+.severity-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+}
+
+.btn-read {
+    display: block;
+    background-color: transparent;
+    color: var(--secondary-color);
+    padding: 10px 0;
+    text-decoration: none;
+    font-weight: 600;
+    text-align: center;
+    border: 2px solid var(--secondary-color);
+    border-radius: 6px;
+    transition: all 0.3s;
+}
+
+.btn-read:hover {
+    background-color: var(--secondary-color);
+    color: var(--white);
+}
+
+/* Detail Page */
+.detail-header {
+    background-color: var(--white);
+    padding: 40px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.detail-content {
+    background-color: var(--white);
+    color: var(--text-primary);
+    padding: 50px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    line-height: 1.8;
+}
+
+.detail-content h2,
+.detail-content h3 {
+    color: var(--primary-color);
+    margin-top: 30px;
+}
+
+.detail-content a {
+    color: var(--secondary-color);
+    text-decoration: none;
+}
+
+.detail-content table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 30px 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #eee;
+}
+
+.detail-content th,
+.detail-content td {
+    border-bottom: 1px solid #eee;
+    padding: 15px;
+}
+
+.detail-content th {
+    background-color: var(--primary-color);
+    color: var(--white);
+    text-align: left;
+}
+
+.detail-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    margin: 20px 0;
+}
+
+.footer-brand {
+    text-align: center;
+    margin-top: 60px;
+    padding: 30px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    background-color: var(--white);
+    border-top: 4px solid var(--accent-color);
+}
+
+.btn-back {
+    color: var(--text-secondary);
+    text-decoration: none;
+    margin-bottom: 20px;
+    display: inline-flex;
+    align-items: center;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.btn-back:hover {
+    color: var(--primary-color);
+}
+
+@media (max-width: 768px) {
+    .brand-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+    }
+
+    .brand-logo {
+        flex-direction: column;
+    }
+
+    .detail-content {
+        padding: 20px;
+    }
+}
+
+/* Professional Scraped Content Styling Override */
+.detail-content {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+}
+
+.detail-content table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 20px 0;
+    font-size: 0.95rem;
+    border: 1px solid #e0e0e0;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.detail-content th,
+.detail-content td {
+    padding: 12px 15px;
+    border: 1px solid #eee;
+    text-align: left;
+    vertical-align: top;
+}
+
+.detail-content th {
+    background-color: #f8f9fa;
+    color: var(--primary-color);
+    font-weight: 600;
+    border-bottom: 2px solid var(--secondary-color);
+}
+
+.detail-content tr:nth-child(even) {
+    background-color: #fcfcfc;
+}
+
+.detail-content p {
+    margin-bottom: 1em;
+}
+
+.detail-content strong,
+.detail-content b {
+    color: #000;
+    font-weight: 700;
+}
+
+.detail-content ul,
+.detail-content ol {
+    margin: 1em 0;
+    padding-left: 1.5em;
+}
+
+.detail-content li {
+    margin-bottom: 0.5em;
+}
+
+.detail-content a {
+    color: var(--secondary-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.detail-content a:hover {
+    text-decoration: underline;
+}
+
+/* Ensure images fit container */
+.detail-content img {
+    max-width: 100%;
+    height: auto !important;
+    border-radius: 4px;
+    display: block;
+    margin: 10px auto;
+    border: 1px solid #eee;
+    padding: 4px;
+    background: #fff;
+}
+
+/* Print Control Button */
+.btn-print {
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 15px;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.btn-print:hover {
+    background-color: var(--primary-color);
+}
+
+/* Print Optimization */
+
+/* Normalized Headers (Global) */
+.detail-content h3 {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+    /* Increased from 1.2rem */
+    font-weight: 700;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 8px;
+    display: block;
+}
+
+.detail-content h4 {
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    /* Increased from 1.1rem */
+    font-weight: 600;
+    margin-top: 25px;
+    margin-bottom: 12px;
+}
+
+/* Cleanup layout */
+.detail-content p:empty,
+.detail-content br+br {
+    display: none;
+    /* Hide empty paragraphs and double BRs if possible (br+br selector is tricky in some contexts but worth a try) */
+}
+
+/* Legacy Class Support (Safety Net) */
+.detail-content .verblue,
+.detail-content .subhead {
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 1.1rem;
+    display: block;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.detail-content ul,
+.detail-content ol {
+    margin-left: 20px;
+    margin-bottom: 20px;
+}
+
+.detail-content li {
+    margin-bottom: 8px;
+}
+
+@media print {
+    @page {
+        margin: 0;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 12pt;
+        background-color: white !important;
+        color: black !important;
+        margin: 1.6cm;
+    }
+
+    header {
+        display: none !important;
+    }
+
+    .container {
+        width: 100% !important;
+        max-width: none !important;
+        padding: 0;
+        margin: 0;
+    }
+
+    .btn-back,
+    .btn-print,
+    .footer-brand {
+        display: none !important;
+    }
+
+    .detail-header {
+        border: none;
+        padding: 0;
+        margin-bottom: 20px;
+        box-shadow: none;
+    }
+
+    .detail-content {
+        box-shadow: none;
+        padding: 0;
+        border: none;
+    }
+
+    .detail-content table {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+        page-break-inside: avoid;
+    }
+
+    .detail-content th,
+    .detail-content td {
+        border: 1px solid #000 !important;
+        color: #000 !important;
+    }
+
+    a {
+        text-decoration: none !important;
+        color: #000 !important;
+    }
+
+    /* Ensure no broken images take up space or look bad */
+    img {
+        max-width: 100% !important;
+    }
+}
