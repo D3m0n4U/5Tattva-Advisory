@@ -33,9 +33,11 @@ body {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 95%;
+    /* Was 1200px */
+    width: 100%;
     margin: 0 auto;
-    padding: 20px;
+    padding: 20px 0;
 }
 
 header {
@@ -78,6 +80,14 @@ header {
     display: block;
 }
 
+.header-advisories-title h2 {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 500;
+    padding-bottom: 0;
+}
+
 .controls button {
     background-color: var(--primary-color);
     border: none;
@@ -103,17 +113,173 @@ header {
 
 .advisory-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 25px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+/* List View Additions */
+.advisory-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.advisory-list .advisory-card {
+    flex-direction: row;
+    align-items: center;
+    padding: 12px 15px;
+}
+
+.advisory-list .advisory-card>div:first-child {
+    flex-shrink: 0;
+    margin-right: 20px;
+    margin-bottom: 0;
+    width: 80px;
+}
+
+.advisory-list .advisory-title-wrapper {
+    margin-bottom: 0;
+    margin-right: 20px;
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.advisory-list .advisory-title {
+    margin: 0;
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+}
+
+.advisory-list .advisory-meta {
+    flex-grow: 1;
+    border-top: none;
+    padding-top: 0;
+    margin-bottom: 0;
+    margin-right: 20px;
+    justify-content: flex-end;
+    gap: 20px;
+}
+
+.advisory-list .advisory-meta-date {
+    min-width: 0;
+    max-width: 250px;
+}
+
+.advisory-list .advisory-meta-date span {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.advisory-list .btn-read {
+    padding: 6px 15px;
+    white-space: nowrap;
+}
+
+/* Custom UI Tooltip Styles */
+[data-tooltip] {
+    position: relative;
+    cursor: help;
+}
+
+[data-tooltip]::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background-color: var(--primary-color);
+    color: var(--white);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    white-space: normal;
+    max-width: 300px;
+    width: max-content;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    border-bottom: 3px solid var(--accent-color);
+    text-align: center;
+    line-height: 1.4;
+}
+
+[data-tooltip]::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    border-width: 6px;
+    border-style: solid;
+    border-color: var(--accent-color) transparent transparent transparent;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+[data-tooltip]:hover::before,
+[data-tooltip]:hover::after {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-8px);
+}
+
+/* View Toggle Styles - Segmented Control */
+.view-toggle {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 25px;
+}
+
+.toggle-switch {
+    display: inline-flex;
+    background-color: #eef2f5;
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.btn-view {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.btn-view:hover:not(.active) {
+    color: var(--primary-color);
+}
+
+.btn-view.active {
+    background: var(--white);
+    color: var(--primary-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .advisory-card {
     background-color: var(--card-bg);
-    border-radius: 12px;
-    padding: 25px;
+    border-radius: 8px;
+    padding: 15px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
     transition: transform 0.2s, box-shadow 0.2s;
-    border-top: 5px solid var(--accent-color);
+    border-top: 4px solid var(--accent-color);
     display: flex;
     flex-direction: column;
 }
@@ -135,23 +301,33 @@ header {
     align-self: flex-start;
 }
 
+/* Title wrapper layout for grid mode */
+.advisory-title-wrapper {
+    flex-grow: 1;
+    min-width: 0;
+}
+
 .advisory-title {
     color: var(--primary-color);
-    font-size: 1.25rem;
-    margin: 0 0 15px 0;
+    font-size: 1rem;
+    margin: 0 0 10px 0;
     font-weight: 700;
-    flex-grow: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .advisory-meta {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     color: var(--text-secondary);
-    margin-bottom: 20px;
+    margin-bottom: 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     border-top: 1px solid #eee;
-    padding-top: 15px;
+    padding-top: 10px;
 }
 
 .severity-badge {
@@ -166,8 +342,9 @@ header {
     display: block;
     background-color: transparent;
     color: var(--secondary-color);
-    padding: 10px 0;
+    padding: 6px 0;
     text-decoration: none;
+    font-size: 0.85rem;
     font-weight: 600;
     text-align: center;
     border: 2px solid var(--secondary-color);
@@ -178,6 +355,35 @@ header {
 .btn-read:hover {
     background-color: var(--secondary-color);
     color: var(--white);
+}
+
+/* Pagination Styles */
+.pagination {
+    margin-top: 15px;
+    padding-bottom: 0px;
+}
+
+.btn-page {
+    background-color: var(--white);
+    color: var(--primary-color);
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-page:hover {
+    background-color: #f0f0f0;
+    border-color: #ccc;
+}
+
+.btn-page.active {
+    background-color: var(--primary-color);
+    color: var(--white);
+    border-color: var(--primary-color);
 }
 
 /* Detail Page */
@@ -241,8 +447,8 @@ header {
 
 .footer-brand {
     text-align: center;
-    margin-top: 60px;
-    padding: 30px;
+    margin-top: 30px;
+    padding: 20px;
     color: var(--text-secondary);
     font-size: 0.9rem;
     background-color: var(--white);
@@ -429,6 +635,212 @@ header {
 
 .detail-content li {
     margin-bottom: 8px;
+}
+
+/* Sidebar Layout */
+.main-layout {
+    display: block;
+}
+
+.content-wrapper {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+}
+
+.sidebar-filters {
+    width: 200px;
+    flex-shrink: 0;
+    background: var(--white);
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    border-top: 4px solid var(--primary-color);
+}
+
+.main-content {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.filter-group {
+    margin-bottom: 25px;
+}
+
+.filter-group:last-child {
+    margin-bottom: 0;
+}
+
+.filter-group h4 {
+    margin: 0 0 15px 0;
+    color: var(--primary-color);
+    font-size: 1.05rem;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 8px;
+    font-weight: 600;
+}
+
+.filter-option {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    transition: color 0.2s;
+}
+
+.filter-option:hover {
+    color: var(--secondary-color);
+}
+
+.filter-option input[type="radio"],
+.filter-option input[type="checkbox"] {
+    margin-right: 10px;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary-color);
+}
+
+/* --- RESPONSIVE DESIGN --- */
+
+/* Tablets and small desktops */
+@media (max-width: 992px) {
+    .content-wrapper {
+        gap: 20px;
+    }
+
+    .sidebar-filters {
+        width: 180px;
+        padding: 12px;
+    }
+}
+
+/* Mobile Devices */
+@media (max-width: 768px) {
+    .brand-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 15px;
+    }
+
+    .brand-logo {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .controls {
+        width: 100%;
+    }
+
+    .controls form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    .header-advisories-title {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .content-wrapper {
+        flex-direction: column;
+    }
+
+    .sidebar-filters {
+        width: 100%;
+        box-sizing: border-box;
+        margin-bottom: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        justify-content: space-between;
+    }
+
+    .view-toggle {
+        width: 100%;
+    }
+
+    .filter-group {
+        flex: 1;
+        min-width: 150px;
+        margin-bottom: 0;
+    }
+
+    .advisory-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
+    }
+
+    .detail-content {
+        padding: 20px;
+    }
+
+    .detail-header {
+        padding: 20px;
+    }
+
+    .btn-print {
+        margin-left: 0;
+        margin-top: 15px;
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Small Mobile Devices */
+@media (max-width: 480px) {
+    .container {
+        padding: 10px 15px;
+    }
+
+    .sidebar-filters {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .advisory-list .advisory-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 15px;
+    }
+
+    .advisory-list .advisory-card>div:first-child {
+        margin-right: 0;
+        width: auto;
+    }
+
+    .advisory-list .advisory-title-wrapper {
+        margin-right: 0;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .advisory-list .advisory-title {
+        margin-right: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+        width: 100%;
+    }
+
+    .advisory-list .advisory-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        margin-right: 0;
+        width: 100%;
+    }
+
+    .advisory-list .btn-read {
+        width: 100%;
+        box-sizing: border-box;
+        margin-top: 5px;
+    }
 }
 
 @media print {

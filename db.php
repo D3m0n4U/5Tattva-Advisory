@@ -108,7 +108,7 @@ function save_advisory($data)
     return $stmt->rowCount(); // Returns 1 if inserted, 0 if ignored (duplicate)
 }
 
-function get_all_advisories($limit = 50, $search = '', $sort = 'newest', $source_filter = '')
+function get_all_advisories($limit = 20, $offset = 0, $search = '', $sort = 'newest', $source_filter = '', $time_range = 'all', $start_date = '', $end_date = '')
 {
     global $db;
 
@@ -123,8 +123,52 @@ function get_all_advisories($limit = 50, $search = '', $sort = 'newest', $source
 
     // Source Filter
     if (!empty($source_filter) && $source_filter !== 'All') {
-        $query .= " AND source LIKE :source";
-        $params[':source'] = "%$source_filter%";
+        $sources = array_map('trim', explode(',', $source_filter));
+        if (count($sources) > 0) {
+            $source_clauses = [];
+            foreach ($sources as $i => $src) {
+                if (!empty($src)) {
+                    $source_clauses[] = "source LIKE :source_$i";
+                    $params[":source_$i"] = "%$src%";
+                }
+            }
+            if (!empty($source_clauses)) {
+                $query .= " AND (" . implode(' OR ', $source_clauses) . ")";
+            }
+        }
+    }
+
+    // Time Range Filter
+    if ($time_range !== 'all') {
+        switch ($time_range) {
+            case '7days':
+                $query .= " AND issue_date >= date('now', '-7 days')";
+                break;
+            case '30days':
+                $query .= " AND issue_date >= date('now', '-30 days')";
+                break;
+            case '6months':
+                $query .= " AND issue_date >= date('now', '-6 months')";
+                break;
+            case '1year':
+                $query .= " AND issue_date >= date('now', '-1 year')";
+                break;
+            case 'custom':
+                if (!empty($start_date) && !empty($end_date)) {
+                    $query .= " AND issue_date BETWEEN :start_date AND :end_date";
+                    $params[':start_date'] = $start_date;
+                    $params[':end_date'] = $end_date;
+                }
+                else if (!empty($start_date)) {
+                    $query .= " AND issue_date >= :start_date";
+                    $params[':start_date'] = $start_date;
+                }
+                else if (!empty($end_date)) {
+                    $query .= " AND issue_date <= :end_date";
+                    $params[':end_date'] = $end_date;
+                }
+                break;
+        }
     }
 
     // Sort
@@ -148,19 +192,91 @@ function get_all_advisories($limit = 50, $search = '', $sort = 'newest', $source
             break;
     }
 
-    $query .= " LIMIT :limit";
+    $query .= " LIMIT :limit OFFSET :offset";
     $params[':limit'] = $limit;
+    $params[':offset'] = $offset;
 
     $stmt = $db->prepare($query);
 
     foreach ($params as $key => $val) {
-        // Bind limit as INT, others as STRING
-        $type = ($key === ':limit') ?PDO::PARAM_INT : PDO::PARAM_STR;
+        $type = ($key === ':limit' || $key === ':offset') ?PDO::PARAM_INT : PDO::PARAM_STR;
         $stmt->bindValue($key, $val, $type);
     }
 
     $stmt->execute();
     return $stmt->fetchAll();
+}
+
+function get_advisories_count($search = '', $source_filter = '', $time_range = 'all', $start_date = '', $end_date = '')
+{
+    global $db;
+
+    $query = "SELECT COUNT(*) FROM advisories WHERE 1=1";
+    $params = [];
+
+    // Search
+    if (!empty($search)) {
+        $query .= " AND (title LIKE :search OR source_id LIKE :search OR cve_ids LIKE :search)";
+        $params[':search'] = "%$search%";
+    }
+
+    // Source Filter
+    if (!empty($source_filter) && $source_filter !== 'All') {
+        $sources = array_map('trim', explode(',', $source_filter));
+        if (count($sources) > 0) {
+            $source_clauses = [];
+            foreach ($sources as $i => $src) {
+                if (!empty($src)) {
+                    $source_clauses[] = "source LIKE :source_$i";
+                    $params[":source_$i"] = "%$src%";
+                }
+            }
+            if (!empty($source_clauses)) {
+                $query .= " AND (" . implode(' OR ', $source_clauses) . ")";
+            }
+        }
+    }
+
+    // Time Range Filter
+    if ($time_range !== 'all') {
+        switch ($time_range) {
+            case '7days':
+                $query .= " AND issue_date >= date('now', '-7 days')";
+                break;
+            case '30days':
+                $query .= " AND issue_date >= date('now', '-30 days')";
+                break;
+            case '6months':
+                $query .= " AND issue_date >= date('now', '-6 months')";
+                break;
+            case '1year':
+                $query .= " AND issue_date >= date('now', '-1 year')";
+                break;
+            case 'custom':
+                if (!empty($start_date) && !empty($end_date)) {
+                    $query .= " AND issue_date BETWEEN :start_date AND :end_date";
+                    $params[':start_date'] = $start_date;
+                    $params[':end_date'] = $end_date;
+                }
+                else if (!empty($start_date)) {
+                    $query .= " AND issue_date >= :start_date";
+                    $params[':start_date'] = $start_date;
+                }
+                else if (!empty($end_date)) {
+                    $query .= " AND issue_date <= :end_date";
+                    $params[':end_date'] = $end_date;
+                }
+                break;
+        }
+    }
+
+    $stmt = $db->prepare($query);
+    foreach ($params as $key => $val) {
+        $stmt->bindValue($key, $val, PDO::PARAM_STR);
+    }
+
+    $stmt->execute();
+    return $stmt->fetchColumn();
 }
 
 function get_advisory($id)

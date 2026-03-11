@@ -12,21 +12,6 @@ require_once 'scraper_github.php';
 require_once 'scraper_microsoft.php';
 require_once 'scraper_linux.php';
 
-$lock_file = __DIR__ . '/last_update.timestamp';
-$cooldown = 900; // 15 minutes cooldown
-
-// Check if we should actually scrape
-if (file_exists($lock_file) && (time() - filemtime($lock_file) < $cooldown) && !isset($_GET['force'])) {
-    echo json_encode([
-        'status' => 'skipped',
-        'new' => 0,
-        'message' => 'Skipped: Recently updated within 15 minutes'
-    ]);
-    exit;
-}
-
-// Update timestamp
-touch($lock_file);
 
 // Execute all scrapers
 $results = [
