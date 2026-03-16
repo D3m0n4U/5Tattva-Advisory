@@ -251,8 +251,8 @@ function fetch_nvd_advisories($silent = false)
     return ["status" => "success", "new" => $new_count, "processed" => $processed];
 }
 
-// Allow CLI execution for testing
-if (php_sapi_name() === 'cli') {
+// Allow CLI execution only if directly called
+if (php_sapi_name() === 'cli' && isset($_SERVER['SCRIPT_FILENAME']) && realpath($_SERVER['SCRIPT_FILENAME']) === realpath(__FILE__)) {
     $result = fetch_nvd_advisories(false);
     print_r($result);
 }

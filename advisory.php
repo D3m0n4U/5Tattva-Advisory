@@ -40,14 +40,38 @@ if (!$adv)
         </div>
         
         <div class="detail-header">
-            <h1 style="color: var(--primary-color); margin:0;"><?php echo htmlspecialchars($adv['title']); ?></h1>
-            <div style="margin-top: 10px; color: var(--text-secondary);">
-                <strong>ID:</strong> <?php echo htmlspecialchars($adv['source_id']); ?> | 
-                <strong>Released:</strong> <?php echo htmlspecialchars($adv['issue_date']); ?>
+            <h1><?php echo htmlspecialchars($adv['title']); ?></h1>
+            <div class="meta-info">
+                <div><span class="meta-label">ID:</span> <?php echo htmlspecialchars($adv['source_id']); ?></div>
+                <div><span class="meta-label">RELEASED:</span> <?php echo htmlspecialchars($adv['issue_date']); ?></div>
+                <div><span class="meta-label">SOURCE:</span> <?php echo htmlspecialchars($adv['source']); ?></div>
             </div>
         </div>
 
+
         <div class="detail-content">
+            <?php if (!empty($adv['software_affected'])): ?>
+                <div style="margin-bottom: 5px;">
+                    <strong style="color: #c00;">Affected Software:</strong>
+                    <span><?php echo htmlspecialchars($adv['software_affected']); ?></span>
+                </div>
+            <?php endif; ?>
+
+            <?php if (!empty($adv['cve_ids'])): ?>
+                <div style="margin-bottom: 20px; font-size: 0.9em; color: #666;">
+                    <strong>CVEs:</strong>
+                    <?php 
+                        $cve_list = explode(',', $adv['cve_ids']);
+                        foreach ($cve_list as $cve) {
+                            $cve = trim($cve);
+                            if (!empty($cve)) {
+                                echo '<a href="https://nvd.nist.gov/vuln/detail/' . htmlspecialchars($cve) . '" target="_blank" style="margin-right: 10px; color: #0066cc;">' . htmlspecialchars($cve) . '</a>';
+                            }
+                        }
+                    ?>
+                </div>
+            <?php endif; ?>
+
             <!-- Injecting HTML content captured from Cert-IN. 
                  Using htmlspecialchars is NOT done here because we want to render the table structure.
                  In a real world scenario, this needs HTMLPurifier to prevent XSS. 

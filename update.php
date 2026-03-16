@@ -1,46 +1,50 @@
 <?php
 // update.php
-// Triggers the scraper manually
+// Triggers the background update worker or returns current status
 
-set_time_limit(0); // Prevent fatal timeout error
-ignore_user_abort(true); // Allow script to finish even if user closes the browser
+$status_file = __DIR__ . '/update_status.json';
 
-require_once 'scraper_certin.php';
-require_once 'scraper_nvd.php';
-require_once 'scraper_cisa.php';
-require_once 'scraper_github.php';
-require_once 'scraper_microsoft.php';
-require_once 'scraper_linux.php';
-
-
-// Execute all scrapers
-$results = [
-    'certin' => fetch_certin_advisories(true),
-    'nvd' => fetch_nvd_advisories(true),
-    'cisa' => fetch_cisa_advisories(true),
-    'github' => fetch_github_advisories(true),
-    'microsoft' => fetch_microsoft_advisories(true),
-    'linux' => fetch_linux_advisories(true)
-];
-
-// Calculate totals
-$total_new = 0;
-$total_processed = 0;
-
-foreach ($results as $source => $res) {
-    if (isset($res['new']))
-        $total_new += $res['new'];
-    if (isset($res['processed']))
-        $total_processed += $res['processed'];
+// Handle AJAX status requests
+if (isset($_GET['check_status'])) {
+    header('Content-Type: application/json');
+    if (file_exists($status_file)) {
+        echo file_get_contents($status_file);
+    } else {
+        echo json_encode(["status" => "idle"]);
+    }
+    exit;
 }
 
-$final_result = [
-    "status" => "success",
-    "new" => $total_new,
-    "processed" => $total_processed,
-    "details" => $results
-];
+// Trigger the update
+$status = ["status" => "idle"];
+if (file_exists($status_file)) {
+    $status = json_decode(file_get_contents($status_file), true);
+}
+
+if ($status['status'] === 'running') {
+    $result = [
+        "status" => "running",
+        "message" => "An update is already in progress.",
+        "percent" => $status['percent'] ?? 0
+    ];
+} else {
+    // Cross-platform background execution
+    $worker_path = __DIR__ . '/update_worker.php';
+    
+    if (stristr(PHP_OS, 'WIN')) {
+        // Windows: popen with start /B
+        pclose(popen("start /B php \"$worker_path\" > nul 2>&1", "r"));
+    } else {
+        // Linux/Unix: nohup and &
+        exec("php \"$worker_path\" > /dev/null 2>&1 &");
+    }
+
+    $result = [
+        "status" => "started",
+        "message" => "Update started in the background."
+    ];
+}
 
 header('Content-Type: application/json');
-echo json_encode($final_result);
+echo json_encode($result);
 ?>

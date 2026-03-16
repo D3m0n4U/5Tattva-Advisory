@@ -185,7 +185,8 @@ function fetch_microsoft_advisories($silent = false)
     return ["status" => "success", "new" => $new_count, "processed" => $processed];
 }
 
-if (php_sapi_name() === 'cli') {
+// Allow CLI execution only if directly called
+if (php_sapi_name() === 'cli' && isset($_SERVER['SCRIPT_FILENAME']) && realpath($_SERVER['SCRIPT_FILENAME']) === realpath(__FILE__)) {
     $result = fetch_microsoft_advisories(false);
     print_r($result);
 }

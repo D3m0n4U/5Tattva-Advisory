@@ -2,34 +2,95 @@
 // db.php
 // Five Tattva Cyberhub Security LLP - Cert-IN Automation
 
-$db_file = __DIR__ . '/database.sqlite';
+$db_path = __DIR__ . '/database.sqlite';
+$db = null;
 
-try {
-    $db = new PDO('sqlite:' . $db_file);
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+function init_db($file = null)
+{
+    global $db, $db_path;
+    if ($file) {
+        $db_path = $file;
+    }
 
-    // Create table if not exists with strict schema
-    $query = "CREATE TABLE IF NOT EXISTS advisories (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        source_id TEXT UNIQUE NOT NULL,
-        source TEXT NOT NULL,
-        cve_ids TEXT,
-        title TEXT,
-        severity TEXT,
-        issue_date TEXT,
-        description TEXT,
-        software_affected TEXT,
-        solution TEXT,
-        original_link TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )";
+    $db = null;
 
-    $db->exec($query);
+    try {
+        $db = new PDO('sqlite:' . $db_path);
+        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
+        // Create table if not exists with strict schema
+        $query = "CREATE TABLE IF NOT EXISTS advisories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_id TEXT UNIQUE NOT NULL,
+            source TEXT NOT NULL,
+            cve_ids TEXT,
+            title TEXT,
+            severity TEXT,
+            issue_date TEXT,
+            description TEXT,
+            software_affected TEXT,
+            solution TEXT,
+            original_link TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )";
+
+        $db->exec($query);
+        $db->exec('PRAGMA journal_mode=DELETE');
+
+    }
+    catch (PDOException $e) {
+        die("Database Connection Error: " . $e->getMessage());
+    }
 }
-catch (PDOException $e) {
-    die("Database Connection Error: " . $e->getMessage());
+
+// Initialize on load
+init_db();
+
+function sync_staging_to_production($staging_file)
+{
+    global $db;
+    try {
+        // Absolute path for attach
+        $staging_path = realpath($staging_file);
+        if (!$staging_path) {
+            $staging_path = $staging_file;
+        }
+
+        $db->exec("ATTACH DATABASE '$staging_path' AS staging");
+
+        // Start a transaction for atomicity
+        $db->beginTransaction();
+
+        $sync_query = "
+            INSERT INTO advisories (source_id, source, cve_ids, title, severity, issue_date, description, software_affected, solution, original_link, created_at)
+            SELECT source_id, source, cve_ids, title, severity, issue_date, description, software_affected, solution, original_link, created_at
+            FROM staging.advisories
+            WHERE 1=1
+            ON CONFLICT(source_id) DO UPDATE SET
+                source = excluded.source,
+                cve_ids = excluded.cve_ids,
+                title = excluded.title,
+                severity = excluded.severity,
+                issue_date = excluded.issue_date,
+                description = excluded.description,
+                software_affected = excluded.software_affected,
+                solution = excluded.solution;
+        ";
+
+        $db->exec($sync_query);
+
+        $db->commit();
+        $db->exec("DETACH DATABASE staging");
+        return true;
+    }
+    catch (Exception $e) {
+        if ($db && $db->inTransaction()) {
+            $db->rollBack();
+        }
+        error_log("Sync Error: " . $e->getMessage());
+        return false;
+    }
 }
 
 function extract_cves($text)
@@ -56,7 +117,11 @@ function save_advisory($data)
     $data[':cve_ids'] = $final_cves;
 
     // Deduplication Check
-    if (!empty($final_cves)) {
+    $stmt = $db->prepare("SELECT id, source_id, source, original_link, cve_ids FROM advisories WHERE source_id = :sid");
+    $stmt->execute([':sid' => $data[':source_id']]);
+    $existing = $stmt->fetch();
+
+    if (!$existing && !empty($final_cves)) {
         $cve_array = explode(',', $final_cves);
         foreach ($cve_array as $cve) {
             $cve = trim($cve);
@@ -64,43 +129,42 @@ function save_advisory($data)
                 continue;
 
             // Check if this CVE already exists in the database
-            // LIKE %CVE% is used because cve_ids is a comma separated string
             $stmt = $db->prepare("SELECT id, source_id, source, original_link FROM advisories WHERE cve_ids LIKE :cve OR title LIKE :cve");
             $stmt->execute([':cve' => "%$cve%"]);
             $existing = $stmt->fetch();
-
-            if ($existing) {
-                $existing_sources = explode(',', $existing['source']);
-                $existing_sources = array_map('trim', $existing_sources);
-                $new_source = trim($data[':source']);
-
-                if (!in_array($new_source, $existing_sources)) {
-                    $existing_sources[] = $new_source;
-                    $updated_sources = implode(', ', $existing_sources);
-
-                    // Update the source list
-                    $update_stmt = $db->prepare('UPDATE advisories SET source = :updated_sources WHERE id = :id');
-                    $update_stmt->execute([
-                        ':updated_sources' => $updated_sources,
-                        ':id' => $existing['id']
-                    ]);
-                    return 0; // Still returning 0 for "not inherently new advisory" but source updated
-                }
-                else {
-                    // If it's already in the sources, and it is NVD or Microsoft, let's update the description to get the rich HTML
-                    // (Only for these sources as requested to get full page info)
-                    if (in_array($new_source, ['NVD', 'Microsoft', 'CISA'])) {
-                        $update_stmt = $db->prepare('UPDATE advisories SET description = :description, software_affected = :software_affected WHERE id = :id');
-                        $update_stmt->execute([
-                            ':description' => $data[':description'],
-                            ':software_affected' => $data[':software_affected'],
-                            ':id' => $existing['id']
-                        ]);
-                    }
-                    return 0; // Duplicate
-                }
-            }
+            if ($existing) break;
         }
+    }
+
+    if ($existing) {
+        $existing_sources = explode(',', $existing['source']);
+        $existing_sources = array_map('trim', $existing_sources);
+        $new_source = trim($data[':source']);
+
+        if (!in_array($new_source, $existing_sources)) {
+            $existing_sources[] = $new_source;
+            $updated_sources = implode(', ', $existing_sources);
+
+            // Update the source list
+            $update_stmt = $db->prepare('UPDATE advisories SET source = :updated_sources WHERE id = :id');
+            $update_stmt->execute([
+                ':updated_sources' => $updated_sources,
+                ':id' => $existing['id']
+            ]);
+        }
+
+        // Always update rich fields if it's a high-fidelity source, or if current fields are empty
+        if (in_array($new_source, ['NVD', 'Microsoft', 'CISA', 'Oracle', 'VMware', 'Linux', 'Qualys'])) {
+            $update_stmt = $db->prepare('UPDATE advisories SET description = :description, software_affected = :software_affected, cve_ids = :cve_ids, solution = :solution WHERE id = :id');
+            $update_stmt->execute([
+                ':description' => $data[':description'],
+                ':software_affected' => $data[':software_affected'],
+                ':cve_ids' => $data[':cve_ids'],
+                ':solution' => $data[':solution'],
+                ':id' => $existing['id']
+            ]);
+        }
+        return 0; // Handled as duplicate/update
     }
 
     $stmt = $db->prepare("INSERT OR IGNORE INTO advisories (source_id, source, cve_ids, title, severity, issue_date, description, software_affected, solution, original_link) VALUES (:source_id, :source, :cve_ids, :title, :severity, :issue_date, :description, :software_affected, :solution, :original_link)");

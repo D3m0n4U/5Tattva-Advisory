@@ -5,7 +5,7 @@ require_once 'db.php';
 $search = $_GET['search'] ?? '';
 $sort = $_GET['sort'] ?? 'newest';
 $source = $_GET['source'] ?? 'All';
-$time_range = $_GET['time_range'] ?? 'all';
+$time_range = $_GET['time_range'] ?? '7days';
 $start_date = $_GET['start_date'] ?? '';
 $end_date = $_GET['end_date'] ?? '';
 
@@ -36,26 +36,42 @@ function get_source_color($src)
             return '#00a4ef'; // Microsoft Blue
         case 'Linux':
             return '#e95420'; // Ubuntu Orange
+        case 'VMware':
+            return '#6d6e71'; // VMware Grey
+        case 'Oracle':
+            return '#f00000'; // Oracle Red
+        case 'Qualys':
+            return '#2e8540'; // Qualys Green
         default:
             return '#666';
+
     }
 }
 
 if (isset($_GET['ajax'])) {
     if (empty($advisories)) {
-        echo '<div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; background: var(--card-bg); border-radius: 8px; border-top: 4px solid var(--text-secondary); box-shadow: 0 4px 15px rgba(0,0,0,0.05);">';
-        echo '<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5" style="margin-bottom: 20px; opacity: 0.5;">';
-        echo '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>';
-        echo '</svg>';
-        echo '<h3 style="color: var(--primary-color); font-size: 1.25rem; margin: 0 0 10px 0; font-weight: 600;">No Threat Intelligence Found</h3>';
-        if (!empty($search)) {
-            echo '<p style="color: var(--text-secondary); margin: 0;">We couldn\'t find any advisories matching "<strong>' . htmlspecialchars($search) . '</strong>". Try adjusting your search or filters.</p>';
+        if ($page == 1) {
+            echo '<div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; background: var(--card-bg); border-radius: 8px; border-top: 4px solid var(--text-secondary); box-shadow: 0 4px 15px rgba(0,0,0,0.05);">';
+            echo '<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5" style="margin-bottom: 20px; opacity: 0.5;">';
+            echo '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>';
+            echo '</svg>';
+            echo '<h3 style="color: var(--primary-color); font-size: 1.25rem; margin: 0 0 10px 0; font-weight: 600;">No Threat Intelligence Found</h3>';
+            if (!empty($search)) {
+                echo '<p style="color: var(--text-secondary); margin: 0;">We couldn\'t find any advisories matching "<strong>' . htmlspecialchars($search) . '</strong>". Try adjusting your search or filters.</p>';
+            }
+            else {
+                echo '<p style="color: var(--text-secondary); margin: 0;">There are no advisories available for the selected filters. Try broadening your criteria.</p>';
+            }
+            echo '</div>';
         }
-        else {
-            echo '<p style="color: var(--text-secondary); margin: 0;">There are no advisories available for the selected filters. Try broadening your criteria.</p>';
-        }
-        echo '</div>';
+        exit;
     }
+
+    // Return total pages info for the frontend
+    if ($page == 1) {
+        echo '<div id="totalPagesInfo" data-total="' . $total_pages . '" style="display:none;"></div>';
+    }
+
     foreach ($advisories as $adv) {
         $source_color = get_source_color($adv['source']);
         echo '<div class="advisory-card">';
@@ -81,36 +97,6 @@ if (isset($_GET['ajax'])) {
         echo '<a href="advisory.php?id=' . $adv['id'] . '" class="btn-read">Read Advisory</a>';
         echo '</div>';
     }
-
-    // Output Pagination HTML
-    if ($total_pages > 1) {
-        $max_visible_pages = 5;
-        $start_page = max(1, $page - floor($max_visible_pages / 2));
-        $end_page = min($total_pages, $start_page + $max_visible_pages - 1);
-
-        if ($end_page - $start_page + 1 < $max_visible_pages) {
-            $start_page = max(1, $end_page - $max_visible_pages + 1);
-        }
-
-        echo '<div class="pagination" style="grid-column: 1/-1; display:flex; justify-content:center; align-items:center; gap:10px; margin-top:15px;">';
-
-        if ($page > 1) {
-            echo '<button onclick="goToPage(' . ($page - 1) . ')" class="btn-page">Prev</button>';
-        }
-
-        for ($i = $start_page; $i <= $end_page; $i++) {
-            $active_class = ($i === $page) ? 'active' : '';
-            echo '<button onclick="goToPage(' . $i . ')" class="btn-page ' . $active_class . '">' . $i . '</button>';
-        }
-
-        if ($page < $total_pages) {
-            echo '<button onclick="goToPage(' . ($page + 1) . ')" class="btn-page">Next</button>';
-        }
-
-        echo '<span style="margin-left: 15px; color: var(--text-secondary); font-size:0.9rem;">Page ' . $page . ' of ' . $total_pages . '</span>';
-        echo '</div>';
-    }
-
     exit;
 }
 ?>
@@ -133,6 +119,8 @@ if (isset($_GET['ajax'])) {
         }
 
         let currentPage = 1;
+        let totalPages = <?php echo $total_pages; ?>;
+        let isLoading = false;
         let currentView = 'grid'; // Default view
 
         function setView(view) {
@@ -152,7 +140,9 @@ if (isset($_GET['ajax'])) {
             }
         }
 
-        function performSearch(page = 1) {
+        function performSearch(append = false) {
+            if (isLoading) return;
+            
             const query = document.getElementById('searchInput').value;
             const sortRadio = document.querySelector('input[name="sort"]:checked');
             const sort = sortRadio ? sortRadio.value : 'newest';
@@ -176,25 +166,52 @@ if (isset($_GET['ajax'])) {
             }
 
             const grid = document.getElementById('advisoryContainer');
+            const loadingIndicator = document.getElementById('loadingIndicator');
             
-            grid.style.opacity = '0.5';
-            currentPage = page;
+            if (!append) {
+                currentPage = 1;
+                grid.style.opacity = '0.5';
+            } else {
+                currentPage++;
+            }
+
+            if (currentPage > totalPages) return;
+
+            isLoading = true;
+            if (loadingIndicator) loadingIndicator.style.display = 'block';
 
             fetch(`index.php?ajax=1&search=${encodeURIComponent(query)}&sort=${encodeURIComponent(sort)}&source=${encodeURIComponent(sourceFilter)}&time_range=${encodeURIComponent(timeRange)}&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}&page=${currentPage}&view=${currentView}`)
                 .then(res => res.text())
                 .then(html => {
-                    grid.innerHTML = html;
-                    grid.style.opacity = '1';
+                    if (!append) {
+                        grid.innerHTML = html;
+                        grid.style.opacity = '1';
+                        // Extract total pages from first load
+                        const totalInfo = document.getElementById('totalPagesInfo');
+                        if (totalInfo) {
+                            totalPages = parseInt(totalInfo.getAttribute('data-total'));
+                        }
+                    } else {
+                        grid.insertAdjacentHTML('beforeend', html);
+                    }
                     
-                    // Scroll to top of grid
-                    grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    isLoading = false;
+                    if (loadingIndicator) loadingIndicator.style.display = 'none';
                 })
-                .catch(err => console.error(err));
+                .catch(err => {
+                    console.error(err);
+                    isLoading = false;
+                    if (loadingIndicator) loadingIndicator.style.display = 'none';
+                });
         }
 
-        function goToPage(page) {
-            performSearch(page);
-        }
+        window.onscroll = function() {
+            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+                if (!isLoading && currentPage < totalPages) {
+                    performSearch(true);
+                }
+            }
+        };
 
         function toggleCustomDateInputs() {
             const timeRange = document.querySelector('input[name="time_range"]:checked').value;
@@ -315,8 +332,18 @@ $is_all = (empty($source) || $source == 'All');
                     <input type="checkbox" class="source-cb" name="source" value="Microsoft" <?php echo($is_all || in_array('Microsoft', $selected_sources)) ? 'checked' : ''; ?>> Microsoft
                 </label>
                 <label class="filter-option">
-                    <input type="checkbox" class="source-cb" name="source" value="Linux" <?php echo($is_all || in_array('Linux', $selected_sources)) ? 'checked' : ''; ?>> Linux / Ubuntu
+                    <input type="checkbox" class="source-cb" name="source" value="Linux" <?php echo($is_all || in_array('Linux', $selected_sources)) ? 'checked' : ''; ?>> Linux
                 </label>
+                <label class="filter-option">
+                    <input type="checkbox" class="source-cb" name="source" value="VMware" <?php echo($is_all || in_array('VMware', $selected_sources)) ? 'checked' : ''; ?>> VMware
+                </label>
+                <label class="filter-option">
+                    <input type="checkbox" class="source-cb" name="source" value="Oracle" <?php echo($is_all || in_array('Oracle', $selected_sources)) ? 'checked' : ''; ?>> Oracle
+                </label>
+                <label class="filter-option">
+                    <input type="checkbox" class="source-cb" name="source" value="Qualys" <?php echo($is_all || in_array('Qualys', $selected_sources)) ? 'checked' : ''; ?>> Qualys
+                </label>
+
             </div>
 
             <div class="filter-group">
@@ -419,39 +446,16 @@ else: ?>
                 </div>
                 <?php
     endforeach; ?>
-            <?php
+                        <?php
 endif; ?>
-            
-            <?php if ($total_pages > 1): ?>
-                <?php
-    $max_visible_pages = 5;
-    $start_page = max(1, $page - floor($max_visible_pages / 2));
-    $end_page = min($total_pages, $start_page + $max_visible_pages - 1);
-
-    if ($end_page - $start_page + 1 < $max_visible_pages) {
-        $start_page = max(1, $end_page - $max_visible_pages + 1);
-    }
-?>
-                <div class="pagination" style="grid-column: 1/-1; display:flex; justify-content:center; align-items:center; gap:10px; margin-top:15px;">
-                    <?php if ($page > 1): ?>
-                        <button onclick="goToPage(<?php echo $page - 1; ?>)" class="btn-page">Prev</button>
-                    <?php
-    endif; ?>
-                    
-                    <?php for ($i = $start_page; $i <= $end_page; $i++): ?>
-                        <button onclick="goToPage(<?php echo $i; ?>)" class="btn-page <?php echo($i === $page) ? 'active' : ''; ?>"><?php echo $i; ?></button>
-                    <?php
-    endfor; ?>
-                    
-                    <?php if ($page < $total_pages): ?>
-                        <button onclick="goToPage(<?php echo $page + 1; ?>)" class="btn-page">Next</button>
-                    <?php
-    endif; ?>
-                    
-                    <span style="margin-left: 15px; color: var(--text-secondary); font-size:0.9rem;">Page <?php echo $page; ?> of <?php echo $total_pages; ?></span>
-                </div>
-            <?php
-endif; ?>
+        </div>
+        
+        <div id="loadingIndicator" style="display: none; text-align: center; padding: 20px; grid-column: 1/-1;">
+            <div class="spinner" style="display: inline-block; width: 40px; height: 40px; border: 4px solid rgba(0,0,0,0.1); border-left-color: var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <style>
+                @keyframes spin { to { transform: rotate(360deg); } }
+            </style>
+        </div>
         </div>
         </div>
         </div>
